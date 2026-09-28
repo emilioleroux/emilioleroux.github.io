@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Manage subscription · Frame & Shape Kit</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: #f5f5f7;
+      color: #1f1f1f;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 520px;
+      padding: 36px;
+      background: #ffffff;
+      border: 1px solid #e6e6e8;
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+
+    p {
+      margin: 0;
+      color: #666;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .error {
+      color: #b42318;
+    }
+
+    button {
+      margin-top: 22px;
+      padding: 10px 18px;
+      border: 0;
+      border-radius: 8px;
+      background: #7d2ae8;
+      color: white;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:hover {
+      opacity: 0.92;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="card">
+    <h1 id="title">Opening your subscription…</h1>
+
+    <p id="message">
+      Connecting securely to the Frame &amp; Shape Kit billing portal.
+    </p>
+
+    <button id="retry" type="button" hidden>
+      Try again
+    </button>
+  </main>
+
+  <script>
+    const OPEN_PORTAL_URL =
+      "https://tneperbscunkqgpdnsbp.supabase.co/functions/v1/open-customer-portal";
+
+    const title = document.getElementById("title");
+    const message = document.getElementById("message");
+    const retry = document.getElementById("retry");
+
+    const params = new URLSearchParams(window.location.search);
+    const session = params.get("session");
+
+    async function openPortal() {
+      retry.hidden = true;
+
+      title.textContent = "Opening your subscription…";
+      message.className = "";
+      message.textContent =
+        "Connecting securely to the Frame & Shape Kit billing portal.";
+
+      if (!session) {
+        showError(
+          "This management link is missing its secure session. Please return to Frame & Shape Kit in Canva and choose Manage again.",
+          false,
+        );
+        return;
+      }
+
+      try {
+        const response = await fetch(OPEN_PORTAL_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ session }),
+        });
+
+        let data = null;
+
+        try {
+          data = await response.json();
+        } catch {
+          // Handled below as an invalid server response.
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            data?.error ||
+              "Unable to open your subscription.",
+          );
+        }
+
+        if (
+          !data ||
+          typeof data.url !== "string" ||
+          !data.url
+        ) {
+          throw new Error(
+            "The billing portal did not return a valid URL.",
+          );
+        }
+
+        // Remove our temporary token from browser history before leaving.
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.pathname,
+        );
+
+        window.location.replace(data.url);
+      } catch (error) {
+        showError(
+          error instanceof Error
+            ? error.message
+            : "Unable to open your subscription.",
+          true,
+        );
+      }
+    }
+
+    function showError(text, allowRetry) {
+      title.textContent = "Couldn't open your subscription";
+      message.className = "error";
+      message.textContent = text;
+
+      retry.hidden = !allowRetry;
+    }
+
+    retry.addEventListener("click", openPortal);
+
+    openPortal();
+  </script>
+</body>
+</html>
