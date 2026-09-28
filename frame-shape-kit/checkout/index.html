@@ -1,14 +1,34 @@
 
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Upgrade — Frame & Shape Kit</title><meta name="description" content="Frame & Shape Kit for Canva"><link rel="stylesheet" href="/assets/css/styles.css"></head><body><header class="site-header"><nav class="nav"><a class="brand" href="/frame-shape-kit/">Frame &amp; Shape Kit</a><div class="nav-links"><a href="/frame-shape-kit/#features">Features</a><a href="/frame-shape-kit/support/">Support</a></div></nav></header><main><article class="document"><h1>Upgrade to Pro</h1><p>This page is reserved for the secure Frame &amp; Shape Kit checkout flow.</p><div id="checkout-status" class="note">Validating your checkout session…</div>
+
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Upgrade — Frame & Shape Kit</title><meta name="description" content="Frame & Shape Kit for Canva"><link rel="stylesheet" href="/assets/css/styles.css"><script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script></head><body><header class="site-header"><nav class="nav"><a class="brand" href="/frame-shape-kit/">Frame &amp; Shape Kit</a><div class="nav-links"><a href="/frame-shape-kit/#features">Features</a><a href="/frame-shape-kit/support/">Support</a></div></nav></header><main><article class="document"><h1>Upgrade to Pro</h1><p>This page is reserved for the secure Frame &amp; Shape Kit checkout flow.</p><div id="checkout-status" class="note">Validating your checkout session…</div>
 
 <div id="checkout-ready" hidden>
-  <p>Your checkout session is valid.</p>
-  <p class="note">Secure checkout is ready to continue. Paddle billing will be connected in the next step.</p>
+  <p>Your checkout session is valid. Choose a Pro plan:</p>
+  <div style="display:grid;gap:12px;margin:20px 0;">
+    <button id="monthly-button" type="button" style="padding:14px 16px;cursor:pointer;">
+      Monthly — $4.99 / month
+    </button>
+    <button id="yearly-button" type="button" style="padding:14px 16px;cursor:pointer;">
+      Yearly — $29.95 / year
+    </button>
+  </div>
+  <p id="purchase-status" class="note" hidden></p>
 </div>
 
 <script>
   const VALIDATE_URL =
     "https://tneperbscunkqgpdnsbp.supabase.co/functions/v1/validate-checkout-session";
+  const PREPARE_URL =
+    "https://tneperbscunkqgpdnsbp.supabase.co/functions/v1/prepare-paddle-checkout";
+
+  const PADDLE_CLIENT_TOKEN = "test_398be86c1728ae6e232a4af3a78";
+  const MONTHLY_PRICE_ID = "pri_01m3hqwps42g3x1rtke3f7q6ag";
+  const YEARLY_PRICE_ID = "pri_01m3hqzeqg7ww1a9j6hgsnnses";
+
+  Paddle.Environment.set("sandbox");
+  Paddle.Initialize({
+    token: PADDLE_CLIENT_TOKEN,
+  });
 
   async function validateCheckoutSession() {
     const status = document.getElementById("checkout-status");
@@ -40,10 +60,72 @@
 
       status.hidden = true;
       ready.hidden = false;
+
+      document.getElementById("monthly-button").addEventListener("click", () => {
+        openPaddleCheckout(MONTHLY_PRICE_ID);
+      });
+
+      document.getElementById("yearly-button").addEventListener("click", () => {
+        openPaddleCheckout(YEARLY_PRICE_ID);
+      });
     } catch (error) {
       console.error("Checkout session validation failed:", error);
       status.textContent =
         "We couldn't validate this checkout session. Please try again.";
+    }
+  }
+
+  async function openPaddleCheckout(priceId) {
+    const purchaseStatus = document.getElementById("purchase-status");
+    const monthlyButton = document.getElementById("monthly-button");
+    const yearlyButton = document.getElementById("yearly-button");
+    const session = new URLSearchParams(window.location.search).get("session");
+
+    purchaseStatus.hidden = false;
+    purchaseStatus.textContent = "Preparing secure checkout…";
+    monthlyButton.disabled = true;
+    yearlyButton.disabled = true;
+
+    try {
+      const response = await fetch(PREPARE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok || !data.customData) {
+        purchaseStatus.textContent =
+          data.error === "Checkout session has expired"
+            ? "This checkout link has expired. Please return to Frame & Shape Kit in Canva and choose Upgrade again."
+            : "We couldn't prepare this checkout. Please return to Canva and try Upgrade again.";
+        return;
+      }
+
+      purchaseStatus.hidden = true;
+
+      Paddle.Checkout.open({
+        items: [
+          {
+            priceId,
+            quantity: 1,
+          },
+        ],
+        customData: data.customData,
+        settings: {
+          displayMode: "overlay",
+          theme: "light",
+          variant: "one-page",
+        },
+      });
+    } catch (error) {
+      console.error("Paddle checkout preparation failed:", error);
+      purchaseStatus.textContent =
+        "We couldn't start the checkout. Please try again.";
+    } finally {
+      monthlyButton.disabled = false;
+      yearlyButton.disabled = false;
     }
   }
 
