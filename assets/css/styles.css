@@ -1,1 +1,205 @@
-*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;color:#18181c;background:#f7f7fa;line-height:1.65}a{color:#6428df}.nav,.footer{max-width:1040px;margin:auto;padding:18px 24px;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap}.site-header,footer{background:#fff;border-bottom:1px solid #e5e5ec}.brand{font-weight:800;color:#18181c;text-decoration:none}.nav-links{display:flex;gap:18px}.nav-links a{color:#62626d;text-decoration:none}.hero,.section{max-width:1040px;margin:auto;padding:80px 24px}.section{padding-top:24px}.eyebrow{color:#6428df;font-weight:800;text-transform:uppercase;font-size:.82rem}h1{font-size:clamp(2.6rem,7vw,5rem);line-height:1;letter-spacing:-.05em;margin:12px 0 24px}.hero p{max-width:740px;font-size:1.2rem;color:#62626d}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.card,.document{background:#fff;border:1px solid #e5e5ec;border-radius:16px;padding:24px}.document{max-width:800px;margin:56px auto;padding:48px}.document h1{font-size:clamp(2.3rem,5vw,3.8rem)}.document p,.document li{color:#404049}.note{background:#f1edff;border:1px solid #ded3ff;border-radius:12px;padding:16px}.button{display:inline-block;background:#7c3cff;color:#fff;text-decoration:none;font-weight:750;padding:12px 18px;border-radius:10px;margin:12px 8px 0 0}.button.secondary{background:#fff;color:#18181c;border:1px solid #e5e5ec}.footer{color:#62626d;font-size:.9rem}.footer a{margin-left:14px;color:#62626d}@media(max-width:760px){.grid{grid-template-columns:1fr}.document{margin:20px 14px;padding:26px 20px}}
+* {
+    box-sizing: border-box
+}
+
+body {
+    margin: 0;
+    font-family: Inter, system-ui, sans-serif;
+    color: #18181c;
+    background: #f7f7fa;
+    line-height: 1.65
+}
+
+a {
+    color: #6428df
+}
+
+.nav,
+.footer {
+    max-width: 1040px;
+    margin: auto;
+    padding: 18px 24px;
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap
+}
+
+.site-header,
+footer {
+    background: #fff;
+    border-bottom: 1px solid #e5e5ec
+}
+
+.brand {
+    font-weight: 800;
+    color: #18181c;
+    text-decoration: none
+}
+
+.nav-links {
+    display: flex;
+    gap: 18px
+}
+
+.nav-links a {
+    color: #62626d;
+    text-decoration: none
+}
+
+.hero,
+.section {
+    max-width: 1040px;
+    margin: auto;
+    padding: 80px 24px
+}
+
+.section {
+    padding-top: 24px
+}
+
+.eyebrow {
+    color: #6428df;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: .82rem
+}
+
+h1 {
+    font-size: clamp(2.6rem, 7vw, 5rem);
+    line-height: 1;
+    letter-spacing: -.05em;
+    margin: 12px 0 24px
+}
+
+.hero p {
+    max-width: 740px;
+    font-size: 1.2rem;
+    color: #62626d
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px
+}
+
+.card,
+.document {
+    background: #fff;
+    border: 1px solid #e5e5ec;
+    border-radius: 16px;
+    padding: 24px
+}
+
+.document {
+    max-width: 800px;
+    margin: 56px auto;
+    padding: 48px
+}
+
+.document h1 {
+    font-size: clamp(2.3rem, 5vw, 3.8rem)
+}
+
+.document p,
+.document li {
+    color: #404049
+}
+
+.note {
+    background: #f1edff;
+    border: 1px solid #ded3ff;
+    border-radius: 12px;
+    padding: 16px
+}
+
+.button {
+    display: inline-block;
+    background: #7c3cff;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 750;
+    padding: 12px 18px;
+    border-radius: 10px;
+    margin: 12px 8px 0 0
+}
+
+.button.secondary {
+    background: #fff;
+    color: #18181c;
+    border: 1px solid #e5e5ec
+}
+
+.footer {
+    color: #62626d;
+    font-size: .9rem
+}
+
+.footer a {
+    margin-left: 14px;
+    color: #62626d
+}
+
+@media(max-width:760px) {
+    .grid {
+        grid-template-columns: 1fr
+    }
+
+    .document {
+        margin: 20px 14px;
+        padding: 26px 20px
+    }
+}
+
+.pricing-card {
+    position: relative;
+    padding-top: 30px;
+}
+
+.pricing-card-pro {
+    border: 2px solid #7c3cff;
+    background: #f7f3ff;
+}
+
+.plan-label {
+    display: inline-block;
+    background: #7c3cff;
+    color: #fff;
+    font-size: .7rem;
+    font-weight: 800;
+    letter-spacing: .06em;
+    padding: 4px 9px;
+    border-radius: 999px;
+    margin-bottom: 8px;
+}
+
+.price {
+    color: #18181c;
+    font-size: 2rem;
+    line-height: 1.1;
+    font-weight: 800;
+    letter-spacing: -.03em;
+    margin: 16px 0 4px;
+}
+
+.price span {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #62626d;
+    letter-spacing: 0;
+}
+
+.price-custom {
+    font-size: 1.55rem;
+}
+
+.yearly-price {
+    color: #6428df;
+    font-weight: 700;
+    margin-top: 6px;
+}
+
+.plan-feature {
+    margin-top: 24px;
+}
