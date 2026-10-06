@@ -1,1 +1,353 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Purchase complete — Frame & Shape Kit</title><meta name="description" content="Frame & Shape Kit for Canva"><link rel="stylesheet" href="/assets/css/styles.css"></head><body><header class="site-header"><nav class="nav"><a class="brand" href="/frame-shape-kit/">Frame &amp; Shape Kit</a><div class="nav-links"><a href="/frame-shape-kit/#features">Features</a><a href="/frame-shape-kit/support/">Support</a></div></nav></header><main><article class="document"><h1>Thanks!</h1><p>This page is reserved for completed Frame &amp; Shape Kit purchases.</p><p>After a successful purchase, return to Canva and Frame &amp; Shape Kit will confirm your Pro access.</p><p>If access does not update, contact <a href="mailto:frameshapekit@gmail.com">frameshapekit@gmail.com</a>.</p></article></main><footer><div class="footer"><span>© 2026 Emilio Le Roux · Frame &amp; Shape Kit</span><span><a href="/frame-shape-kit/privacy/">Privacy</a><a href="/frame-shape-kit/terms/">Terms</a><a href="/frame-shape-kit/support/">Support</a></span></div></footer></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  >
+
+  <title>
+    Purchase complete — Frame & Shape Kit
+  </title>
+
+  <meta
+    name="description"
+    content="Frame & Shape Kit for Canva"
+  >
+
+  <link
+    rel="stylesheet"
+    href="/assets/css/styles.css"
+  >
+
+  <style>
+    .activation-status {
+      margin-top: 24px;
+    }
+
+    .activation-status h1 {
+      margin-bottom: 12px;
+    }
+
+    .activation-status p {
+      max-width: 620px;
+    }
+
+    .status-note {
+      margin-top: 18px;
+      color: #666;
+      font-size: 0.95rem;
+    }
+
+    .success-mark {
+      font-size: 2.5rem;
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="site-header">
+    <nav class="nav">
+      <a
+        class="brand"
+        href="/frame-shape-kit/"
+      >
+        Frame &amp; Shape Kit
+      </a>
+
+      <div class="nav-links">
+        <a href="/frame-shape-kit/#features">
+          Features
+        </a>
+
+        <a href="/frame-shape-kit/support/">
+          Support
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <article class="document activation-status">
+
+      <div
+        id="success-mark"
+        class="success-mark"
+        hidden
+      >
+        ✓
+      </div>
+
+      <h1 id="title">
+        Activating your Pro access…
+      </h1>
+
+      <p id="message">
+        Your payment was successful. We're confirming your
+        Frame &amp; Shape Kit Pro subscription.
+      </p>
+
+      <p
+        id="note"
+        class="status-note"
+      >
+        This usually takes only a moment.
+      </p>
+
+    </article>
+  </main>
+
+  <footer>
+    <div class="footer">
+      <span>
+        © 2026 Emilio Le Roux · Frame &amp; Shape Kit
+      </span>
+
+      <span>
+        <a href="/frame-shape-kit/privacy/">
+          Privacy
+        </a>
+
+        <a href="/frame-shape-kit/terms/">
+          Terms
+        </a>
+
+        <a href="/frame-shape-kit/support/">
+          Support
+        </a>
+      </span>
+    </div>
+  </footer>
+
+  <script>
+    const CHECK_ACTIVATION_URL =
+      "https://tneperbscunkqgpdnsbp.supabase.co/functions/v1/check-stripe-activation";
+
+    const title =
+      document.getElementById("title");
+
+    const message =
+      document.getElementById("message");
+
+    const note =
+      document.getElementById("note");
+
+    const successMark =
+      document.getElementById("success-mark");
+
+    const params =
+      new URLSearchParams(
+        window.location.search,
+      );
+
+    const stripeSessionId =
+      params.get("stripe_session_id");
+
+    const MAX_ATTEMPTS = 12;
+    const POLL_INTERVAL = 1500;
+
+    let attempts = 0;
+
+
+    async function checkActivation() {
+      if (!stripeSessionId) {
+        showGenericSuccess();
+        return;
+      }
+
+      attempts += 1;
+
+      try {
+        const response = await fetch(
+          CHECK_ACTIVATION_URL,
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              stripe_session_id:
+                stripeSessionId,
+            }),
+          },
+        );
+
+        let data = null;
+
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            data?.error ||
+            "Unable to confirm activation.",
+          );
+        }
+
+        // --------------------------------------------------
+        // Stripe payment is confirmed AND webhook has
+        // activated Pro.
+        // --------------------------------------------------
+
+        if (
+          data?.paid === true &&
+          data?.active === true
+        ) {
+          showActivated(
+            data.interval,
+          );
+
+          return;
+        }
+
+        // --------------------------------------------------
+        // Stripe confirms payment, but the webhook may still
+        // be processing.
+        // --------------------------------------------------
+
+        if (
+          data?.paid === true &&
+          data?.active === false
+        ) {
+          if (attempts < MAX_ATTEMPTS) {
+            setTimeout(
+              checkActivation,
+              POLL_INTERVAL,
+            );
+
+            return;
+          }
+
+          showDelayedActivation();
+          return;
+        }
+
+        // --------------------------------------------------
+        // Checkout exists but Stripe does not yet consider
+        // payment complete.
+        // --------------------------------------------------
+
+        if (data?.paid === false) {
+          if (attempts < MAX_ATTEMPTS) {
+            setTimeout(
+              checkActivation,
+              POLL_INTERVAL,
+            );
+
+            return;
+          }
+
+          showGenericSuccess();
+          return;
+        }
+
+        showGenericSuccess();
+
+      } catch (error) {
+        console.error(
+          "Activation check failed:",
+          error,
+        );
+
+        /*
+         * A temporary network/API failure should never make
+         * a paying customer think their purchase failed.
+         */
+        if (attempts < MAX_ATTEMPTS) {
+          setTimeout(
+            checkActivation,
+            POLL_INTERVAL,
+          );
+
+          return;
+        }
+
+        showDelayedActivation();
+      }
+    }
+
+
+    function showActivated(interval) {
+      successMark.hidden = false;
+
+      title.textContent =
+        "You're Pro!";
+
+      message.textContent =
+        "Your Frame & Shape Kit Pro subscription is active. Return to Canva to continue with unlimited geometry operations.";
+
+      if (interval === "year") {
+        note.textContent =
+          "Your annual Pro subscription is active.";
+      } else if (interval === "month") {
+        note.textContent =
+          "Your monthly Pro subscription is active.";
+      } else {
+        note.textContent =
+          "You can now return to Frame & Shape Kit in Canva.";
+      }
+
+      cleanUrl();
+    }
+
+
+    function showDelayedActivation() {
+      successMark.hidden = false;
+
+      title.textContent =
+        "Payment complete";
+
+      message.textContent =
+        "Your purchase was successful. Pro activation is taking a little longer than expected.";
+
+      note.innerHTML =
+        'Return to Canva in a moment. If Pro access does not appear, contact <a href="mailto:frameshapekit@gmail.com">frameshapekit@gmail.com</a>.';
+
+      cleanUrl();
+    }
+
+
+    function showGenericSuccess() {
+      successMark.hidden = false;
+
+      title.textContent =
+        "Thanks!";
+
+      message.textContent =
+        "Your purchase has been completed. Return to Canva and Frame & Shape Kit will confirm your Pro access.";
+
+      note.innerHTML =
+        'If access does not update, contact <a href="mailto:frameshapekit@gmail.com">frameshapekit@gmail.com</a>.';
+
+      cleanUrl();
+    }
+
+
+    function cleanUrl() {
+      /*
+       * Remove the Stripe Checkout Session ID from the
+       * visible browser URL/history once we no longer need it.
+       */
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname,
+      );
+    }
+
+
+    checkActivation();
+  </script>
+
+</body>
+</html>
