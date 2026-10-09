@@ -12,22 +12,86 @@
 </head>
 <body>
   <h1>Secure checkout</h1>
-  <p id="status" class="note">Opening Paddle checkout…</p>
+  <p id="status" class="note">Verifying Paddle checkout…</p>
   <script>
-    // Replace with a PUBLIC Paddle Sandbox client-side token, not an API key.
     const PADDLE_CLIENT_TOKEN = "test_398be86c1728ae6e232a4af3a78";
+    const CHECK_URL = "https://tneperbscunkqgpdnsbp.supabase.co/functions/v1/check-paddle-checkout";
     const status = document.getElementById("status");
     const transactionId = new URLSearchParams(location.search).get("_ptxn");
+    const CHECK_EVERY_MS = 10000;
+    let expectedInterval = null;
+    let stopped = false;
+    let checking = false;
+    let failures = 0;
+    let timer = null;
 
-    if (!/^txn_[a-zA-Z0-9]+$/.test(transactionId || "")) {
-      status.textContent = "This payment link is invalid. Return to Canva and choose Upgrade again.";
-    } else if (PADDLE_CLIENT_TOKEN === "REPLACE_WITH_SANDBOX_CLIENT_TOKEN") {
-      status.textContent = "Paddle checkout is not yet configured.";
-    } else {
+    async function verify() {
+      const response = await fetch(CHECK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transactionId }),
+        cache: "no-store",
+        signal: AbortSignal.timeout(12000),
+      });
+      if (!response.ok) throw new Error(`Verification failed (${response.status})`);
+      const data = await response.json();
+      if (!data.ok || !["month", "year"].includes(data.interval)) {
+        throw new Error("Invalid verification response");
+      }
+      return data;
+    }
+
+    function stop(message) {
+      if (stopped) return;
+      stopped = true;
+      if (timer) clearInterval(timer);
+      try { Paddle.Checkout.close(); } catch (error) { console.warn("Unable to close checkout", error); }
+      status.textContent = message;
+    }
+
+    async function recheck() {
+      if (stopped || checking) return;
+      checking = true;
       try {
+        const result = await verify();
+        failures = 0;
+        if (result.interval !== expectedInterval) {
+          stop("Your subscription plan changed in another checkout window. Return to Canva and open Upgrade again to see the correct price.");
+        } else if (!["draft", "ready"].includes(result.status)) {
+          stop("This checkout is no longer available. Return to Canva to check your subscription or open Upgrade again.");
+        }
+      } catch (error) {
+        console.error("Checkout verification error", error);
+        failures += 1;
+        if (failures >= 2) {
+          stop("We couldn't verify your checkout. Return to Canva and open Upgrade again before paying.");
+        }
+      } finally {
+        checking = false;
+      }
+    }
+
+    async function start() {
+      if (!/^txn_[a-zA-Z0-9]+$/.test(transactionId || "")) {
+        status.textContent = "This payment link is invalid. Return to Canva and choose Upgrade again.";
+        return;
+      }
+      try {
+        const initial = await verify();
+        if (!["draft", "ready"].includes(initial.status)) {
+          status.textContent = "This checkout is no longer available. Return to Canva to check your subscription.";
+          return;
+        }
+        expectedInterval = initial.interval;
         Paddle.Environment.set("sandbox");
         Paddle.Initialize({
           token: PADDLE_CLIENT_TOKEN,
+          eventCallback: (event) => {
+            if (event.name === "checkout.completed") {
+              stopped = true;
+              if (timer) clearInterval(timer);
+            }
+          },
           checkout: {
             settings: {
               displayMode: "overlay",
@@ -36,12 +100,18 @@
             }
           }
         });
+        status.textContent = "Paddle checkout is open. If you change plans in another tab, this page will ask you to reopen checkout.";
         Paddle.Checkout.open({ transactionId });
+        timer = setInterval(recheck, CHECK_EVERY_MS);
+        document.addEventListener("visibilitychange", () => {
+          if (!document.hidden) recheck();
+        });
       } catch (error) {
         console.error("Unable to initialize Paddle checkout", error);
-        status.textContent = "Unable to open checkout. Please return to Canva and try again.";
+        status.textContent = "Unable to verify or open checkout. Please return to Canva and try again.";
       }
     }
+    start();
   </script>
 </body>
 </html>
