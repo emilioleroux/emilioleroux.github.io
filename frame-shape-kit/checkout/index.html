@@ -113,6 +113,11 @@
       const STRIPE_CHECKOUT_URL =
         "https://tneperbscunkqgpdnsbp.supabase.co/functions/v1/create-stripe-checkout";
 
+      const BILLING_PROVIDER = "paddle";
+
+      const PADDLE_CHECKOUT_URL =
+        "https://tneperbscunkqgpdnsbp.supabase.co/functions/v1/create-paddle-checkout";
+
 
       // -----------------------------------------------------
       // Validate temporary Frame & Shape Kit checkout session
@@ -203,7 +208,7 @@
             .addEventListener(
               "click",
               () => {
-                startStripeCheckout(
+                startCheckout(
                   "month"
                 );
               }
@@ -217,7 +222,7 @@
             .addEventListener(
               "click",
               () => {
-                startStripeCheckout(
+                startCheckout(
                   "year"
                 );
               }
@@ -242,7 +247,7 @@
       // Ask Supabase to create Stripe Checkout Session
       // -----------------------------------------------------
 
-      async function startStripeCheckout(
+      async function startCheckout(
         interval
       ) {
 
@@ -281,7 +286,9 @@
 
           const response =
             await fetch(
-              STRIPE_CHECKOUT_URL,
+              BILLING_PROVIDER === "paddle"
+                ? PADDLE_CHECKOUT_URL
+                : STRIPE_CHECKOUT_URL,
               {
                 method: "POST",
 
